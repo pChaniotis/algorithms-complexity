@@ -14,21 +14,27 @@ def create_weighted_graph(n, p, max_weight = 10, seed=None):
 def total_weight_of_sides(G, v, A, B):
     sum_A = 0
     sum_B = 0
-    isA = False
+    is_A = False
 
     edge_attributes = nx.get_edge_attributes(G,"weight")
-    for node in G.neighbors(v):
+    for node in nx.all_neighbors(G,v):
         for a in A:
             if (a == v):
-                isA = True;
+                is_A = True;
             if node == a:
-                sum_A += edge_attributes[(v,node)]
+                if (v,node) in edge_attributes:
+                    sum_A += edge_attributes[(v,node)]
+                else:
+                    sum_A += edge_attributes[(node,v)]
         for b in B:
             if node == b:
-                sum_B += edge_attributes[(v,node)]
+                if (v,node) in edge_attributes:
+                    sum_B += edge_attributes[(v,node)]
+                else:
+                    sum_B += edge_attributes[(node,v)]
         
                 
-    if isA: 
+    if is_A: 
         sum_own_side = sum_A 
         sum_other_side = sum_B
     else:
@@ -44,22 +50,22 @@ def local_search_maxcut(G, A, B, seed):
     # Use this random number generator if necessary.
     # For example rng.randint(0, 10) for a uniformly random integer r: 0 <= r <= 10
 
-    random_node = rng.randint(0,len(G.nodes))
+    random_node_list = [rng.randint(0,len(G.nodes)-1),rng.randint(0,len(G.nodes)-1),rng.randint(0,len(G.nodes)-1),rng.randint(0,len(G.nodes)-1)]
+    #random_node = max(G.degree(weight='weight'))[0]
     
-    for v in G.neighbors(random_node):
-        while True:    
-            is_A = True if v in A else False
-            this_side, other_side = total_weight_of_sides(G, v, A, B)
+    import itertools
+    for random_node in random_node_list:
+        for v in itertools.chain([random_node],nx.all_neighbors(G,random_node)):
+                is_A = True if v in A else False
+                this_side, other_side = total_weight_of_sides(G, v, A, B)
 
-            if (this_side > other_side):
-                if(is_A):
-                    A.remove(v)
-                    B.append(v)
-                else:
-                    B.remove(v)
-                    A.append(v)
-            else:
-                break;
+                if (this_side > other_side):
+                    if(is_A):
+                        A.remove(v)
+                        B.append(v)
+                    else:
+                        B.remove(v)
+                        A.append(v)
     
     return A, B
 
@@ -81,6 +87,8 @@ partition_B = nodes[6:12]
 
 # Run local search
 A, B = local_search_maxcut(G, partition_A, partition_B, seed=123)
+print(A)
+print(B)
 
 # Check the value
 print(check_cut_value(G, A, B, 199))
